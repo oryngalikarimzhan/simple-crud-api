@@ -12,34 +12,32 @@ import { IController } from '../controllers/IController';
 
 const getServerExecutorName = () => (cluster.isWorker ? 'WORKER' : 'SERVER');
 
-export function runServer(port: number, memoryDbWorker: Worker) {
+export function runServer(port: number, memoryDBWorker?: Worker) {
   const controllers: { [key in (typeof routes)[number]]: IController } = {
-    users: new UsersController(memoryDbWorker),
+    users: new UsersController(memoryDBWorker),
   };
 
-  const server = http.createServer(
-    async (req: http.IncomingMessage, res: http.ServerResponse) => {
-      res.setHeader('Content-Type', 'application/json');
+  const server = http.createServer(async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
 
-      useErrorBoundary(res, () => {
-        const { method, url } = req;
+    useErrorBoundary(res, () => {
+      const { method, url } = req;
 
-        logRequestToConsole('Request', {
-          method,
-          port,
-          pid: process.pid,
-        });
-
-        const { route, id } = validateAndGet(url);
-
-        controllers[route]?.handle(req, res, id);
+      logRequestToConsole('Request', {
+        method,
+        port,
+        pid: process.pid,
       });
-    },
-  );
+
+      const { route, id } = validateAndGet(url);
+
+      controllers[route]?.handle(req, res, id);
+    });
+  });
 
   server.listen(port, () => {
     console.log(
-      `${getServerExecutorName()}: ${host}:${port}, pid: ${process.pid}`,
+      `${getServerExecutorName()}: ${host} = ${port}, pid = ${process.pid}`,
     );
   });
 }

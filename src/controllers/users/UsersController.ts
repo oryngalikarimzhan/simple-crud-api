@@ -3,7 +3,7 @@ import { Worker } from 'cluster';
 import { v4 } from 'uuid';
 
 import { IController } from '../IController';
-import { MemoryDBTransaction } from '../../memoryDB';
+import { MemoryDBTransaction, MemoryDBTransactionResult } from '../../memoryDB';
 import { UserCreateDto, UserUpdateDto, User } from '../../models/user/User';
 import {
   isValidUserCreateDto,
@@ -17,17 +17,22 @@ import {
   useErrorBoundary,
 } from '../../server/serverUtils';
 import { UsersTransactionTypes } from '../../memoryDB/utils';
-import { BadRequestError } from '../../server/serverErrors';
+import {
+  BadRequestError,
+  InternalError,
+  NotFoundError,
+} from '../../server/serverErrors';
+import cluster from 'cluster';
 
 export class UsersController implements IController {
-  constructor(public db: Worker) {}
+  constructor(public db?: Worker) {}
 
   async handle(
     req: http.IncomingMessage,
     res: http.ServerResponse,
     id: string | undefined,
   ) {
-    useErrorBoundary(res, async () => {
+    try {
       const transaction = {
         pid: process.pid,
       } as MemoryDBTransaction;
@@ -74,37 +79,42 @@ export class UsersController implements IController {
 
           break;
 
-        case HTTPMethods.PUT:
-          if (id) {
-            const stringBody = await getBodyData(req);
-
-            if (!stringBody) {
-              throw new BadRequestError(ServerMessages.EMPTY_BODY);
-            }
-
-            let userDto: UserUpdateDto;
-
-            try {
-              userDto = JSON.parse(stringBody);
-            } catch {
-              throw new BadRequestError(ServerMessages.INVALID_JSON_FORMAT);
-            }
-
-            if (!isValidUserUpdateDto(userDto)) {
-              throw new BadRequestError(ServerMessages.INVALID_USER_DATA);
-            }
-
-            transaction.type = UsersTransactionTypes.UPDATE_USER;
-            transaction.params = [id, userDto];
+        case HTTPMethods.PUT: {
+          if (!id) {
+            throw new BadRequestError(ServerMessages.ID_NOT_PROVIDED);
           }
+
+          const stringBody = await getBodyData(req);
+
+          if (!stringBody) {
+            throw new BadRequestError(ServerMessages.EMPTY_BODY);
+          }
+
+          let userDto: UserUpdateDto;
+
+          try {
+            userDto = JSON.parse(stringBody);
+          } catch {
+            throw new BadRequestError(ServerMessages.INVALID_JSON_FORMAT);
+          }
+
+          if (!isValidUserUpdateDto(userDto)) {
+            throw new BadRequestError(ServerMessages.INVALID_USER_DATA);
+          }
+
+          transaction.type = UsersTransactionTypes.UPDATE_USER;
+          transaction.params = [id, userDto];
 
           break;
+        }
 
         case HTTPMethods.DELETE:
-          if (id) {
-            transaction.type = UsersTransactionTypes.DELETE_USER;
-            transaction.params = id;
+          if (!id) {
+            throw new BadRequestError(ServerMessages.ID_NOT_PROVIDED);
           }
+
+          transaction.type = UsersTransactionTypes.DELETE_USER;
+          transaction.params = id;
 
           break;
 
@@ -112,24 +122,65 @@ export class UsersController implements IController {
           throw new BadRequestError(ServerMessages.UNSUPPORTED_METHOD);
       }
 
-      this.db.send(transaction);
+      if (cluster.isPrimary) {
+        if (!this.db) {
+          process.exit();
+        }
 
-      this.db.on('message', (msg) => {
-        useErrorBoundary(res, () => {
-          if (msg.pid === process.pid) {
-            if (msg.isError) {
-              throw new Error();
+        this.db.send(transaction);
+
+        this.db.on('message', (msg) => {
+          useErrorBoundary(res, () => {
+            if (msg.pid === process.pid) {
+              if (msg.isError) {
+                throw new Error();
+              }
+
+              if (!msg.result) {
+                throw new BadRequestError(ServerMessages.USER_NOT_FOUND);
+              }
+
+              res.statusCode = StatusCodes.OK;
+              res.end(JSON.stringify(msg.result));
             }
-
-            if (!msg.result) {
-              throw new BadRequestError(ServerMessages.USER_NOT_FOUND);
-            }
-
-            res.statusCode = StatusCodes.OK;
-            res.end(JSON.stringify(msg.result));
-          }
+          });
         });
-      });
-    });
+      } else {
+        if (!process.send) {
+          process.exit();
+        }
+        process.send(transaction);
+
+        process.on('message', (msg) => {
+          useErrorBoundary(res, () => {
+            const memoryDbTransactionResult = msg as MemoryDBTransactionResult;
+            if (memoryDbTransactionResult.pid === process.pid) {
+              if (memoryDbTransactionResult.isError) {
+                throw new Error();
+              }
+
+              if (!memoryDbTransactionResult.result) {
+                throw new BadRequestError(ServerMessages.USER_NOT_FOUND);
+              }
+
+              res.statusCode = StatusCodes.OK;
+              res.end(JSON.stringify(memoryDbTransactionResult.result));
+            }
+          });
+        });
+      }
+    } catch (error) {
+      const { statusCode, message } =
+        error instanceof BadRequestError || error instanceof NotFoundError
+          ? error
+          : new InternalError();
+
+      res.statusCode = statusCode;
+      res.end(
+        JSON.stringify({
+          message: message,
+        }),
+      );
+    }
   }
 }

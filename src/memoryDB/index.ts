@@ -12,11 +12,13 @@ export type MemoryDBTransaction = {
 export type MemoryDBTransactionResult = {
   pid: number;
   result: User[] | User | string;
-  message: string;
+  isError: boolean;
 };
 
 export function runMemoryDb() {
   const usersMemoryDb: User[] = [];
+
+  console.log(`MEMORY DATABASE: pid - ${process.pid}`);
 
   process.on('message', ({ type, pid, params }: MemoryDBTransaction) => {
     if (!process.send) {
