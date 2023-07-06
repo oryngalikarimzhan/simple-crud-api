@@ -44,10 +44,15 @@ To start the server in 'production' mode
 npm run start:prod
 ```
 
+To start the server in 'development' mode with 'clustering' ability
+```
+npm run start:multi:dev
+```
+
 To start the server in 'production' mode with 'clustering' ability
 
 ```
-npm run start:multi
+npm run start:multi:prod
 ```
 
 To run tests
