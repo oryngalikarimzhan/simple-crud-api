@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { validate } from 'uuid';
 import { API_ROOT_ROUTE, routes } from './constants';
 import { BadRequestError, InternalError, NotFoundError } from './serverErrors';
@@ -87,20 +88,16 @@ export function logRequestToConsole(
   console.table({ [name]: { ...stats, time: new Date() } });
 }
 
-export function useErrorBoundary(res: ServerResponse, callback: () => void) {
-  try {
-    callback();
-  } catch (error) {
-    const { statusCode, message } =
-      error instanceof BadRequestError || error instanceof NotFoundError
-        ? error
-        : new InternalError();
+export function handleCaughtError(error: unknown, res: ServerResponse) {
+  const { statusCode, message } =
+    error instanceof BadRequestError || error instanceof NotFoundError
+      ? error
+      : new InternalError();
 
-    res.statusCode = statusCode;
-    res.end(
-      JSON.stringify({
-        message: message,
-      }),
-    );
-  }
+  res.statusCode = statusCode;
+  res.end(
+    JSON.stringify({
+      message: message,
+    }),
+  );
 }

@@ -14,14 +14,10 @@ import {
   ServerMessages,
   StatusCodes,
   getBodyData,
-  useErrorBoundary,
+  handleCaughtError,
 } from '../../server/serverUtils';
 import { UsersTransactionTypes } from '../../memoryDB/utils';
-import {
-  BadRequestError,
-  InternalError,
-  NotFoundError,
-} from '../../server/serverErrors';
+import { BadRequestError } from '../../server/serverErrors';
 import cluster from 'cluster';
 
 export class UsersController implements IController {
@@ -130,7 +126,7 @@ export class UsersController implements IController {
         this.db.send(transaction);
 
         this.db.on('message', (msg) => {
-          useErrorBoundary(res, () => {
+          try {
             if (msg.pid === process.pid) {
               if (msg.isError) {
                 throw new Error();
@@ -143,7 +139,9 @@ export class UsersController implements IController {
               res.statusCode = StatusCodes.OK;
               res.end(JSON.stringify(msg.result));
             }
-          });
+          } catch (error) {
+            handleCaughtError(error, res);
+          }
         });
       } else {
         if (!process.send) {
@@ -152,7 +150,7 @@ export class UsersController implements IController {
         process.send(transaction);
 
         process.on('message', (msg) => {
-          useErrorBoundary(res, () => {
+          try {
             const memoryDbTransactionResult = msg as MemoryDBTransactionResult;
             if (memoryDbTransactionResult.pid === process.pid) {
               if (memoryDbTransactionResult.isError) {
@@ -166,21 +164,13 @@ export class UsersController implements IController {
               res.statusCode = StatusCodes.OK;
               res.end(JSON.stringify(memoryDbTransactionResult.result));
             }
-          });
+          } catch (error) {
+            handleCaughtError(error, res);
+          }
         });
       }
     } catch (error) {
-      const { statusCode, message } =
-        error instanceof BadRequestError || error instanceof NotFoundError
-          ? error
-          : new InternalError();
-
-      res.statusCode = statusCode;
-      res.end(
-        JSON.stringify({
-          message: message,
-        }),
-      );
+      handleCaughtError(error, res);
     }
   }
 }

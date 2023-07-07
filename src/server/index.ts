@@ -2,8 +2,8 @@ import http from 'http';
 import cluster, { Worker } from 'cluster';
 
 import {
+  handleCaughtError,
   logRequestToConsole,
-  useErrorBoundary,
   validateAndGet,
 } from './serverUtils';
 import { host, routes } from './constants';
@@ -20,7 +20,7 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
   const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
-    useErrorBoundary(res, () => {
+    try {
       const { method, url } = req;
 
       logRequestToConsole('Request', {
@@ -32,7 +32,9 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
       const { route, id } = validateAndGet(url);
 
       controllers[route]?.handle(req, res, id);
-    });
+    } catch (error) {
+      handleCaughtError(error, res);
+    }
   });
 
   server.listen(port, () => {
