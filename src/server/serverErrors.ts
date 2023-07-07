@@ -2,11 +2,9 @@ import { ServerMessages, StatusCodes } from './serverUtils';
 
 export class NotFoundError extends Error {
   statusCode = StatusCodes.NOT_FOUND;
-  message: string;
 
-  constructor(url: string | undefined) {
+  constructor(public message: string) {
     super();
-    this.message = `This url route: ${url} does nor exists`;
   }
 }
 

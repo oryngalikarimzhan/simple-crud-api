@@ -17,7 +17,7 @@ import {
   handleCaughtError,
 } from '../../server/serverUtils';
 import { UsersTransactionTypes } from '../../memoryDB/utils';
-import { BadRequestError } from '../../server/serverErrors';
+import { BadRequestError, NotFoundError } from '../../server/serverErrors';
 import cluster from 'cluster';
 
 export class UsersController implements IController {
@@ -118,63 +118,36 @@ export class UsersController implements IController {
           throw new BadRequestError(ServerMessages.UNSUPPORTED_METHOD);
       }
 
-      if (cluster.isPrimary) {
-        if (!this.db) {
-          console.log(
-            'Closing process. Reason: memory db worker does not exists',
-          );
-          process.exit();
-        }
+      const channel = cluster.isPrimary ? this.db : process;
 
-        this.db.send(transaction);
-
-        this.db.on('message', (msg) => {
-          try {
-            if (msg.pid === process.pid) {
-              if (msg.isError) {
-                throw new Error();
-              }
-
-              if (!msg.result) {
-                throw new BadRequestError(ServerMessages.USER_NOT_FOUND);
-              }
-
-              res.statusCode = StatusCodes.OK;
-              res.end(JSON.stringify(msg.result));
-            }
-          } catch (error) {
-            handleCaughtError(error, res);
-          }
-        });
-      } else {
-        if (!process.send) {
-          console.log(
-            'Closing process. Reason: process send method does not exist',
-          );
-          process.exit();
-        }
-        process.send(transaction);
-
-        process.on('message', (msg) => {
-          try {
-            const memoryDbTransactionResult = msg as MemoryDBTransactionResult;
-            if (memoryDbTransactionResult.pid === process.pid) {
-              if (memoryDbTransactionResult.isError) {
-                throw new Error();
-              }
-
-              if (!memoryDbTransactionResult.result) {
-                throw new BadRequestError(ServerMessages.USER_NOT_FOUND);
-              }
-
-              res.statusCode = StatusCodes.OK;
-              res.end(JSON.stringify(memoryDbTransactionResult.result));
-            }
-          } catch (error) {
-            handleCaughtError(error, res);
-          }
-        });
+      if (!channel || !channel.send) {
+        console.log(
+          'Closing process. Reason: process send method or memory database do not exist',
+        );
+        process.exit();
       }
+      channel.send(transaction);
+
+      channel.on('message', (msg) => {
+        try {
+          const transactionResult = msg as MemoryDBTransactionResult;
+
+          if (transactionResult.pid === process.pid) {
+            if (transactionResult.isError) {
+              throw new Error();
+            }
+
+            if (!transactionResult.result) {
+              throw new NotFoundError(ServerMessages.USER_NOT_FOUND);
+            }
+
+            res.statusCode = StatusCodes.OK;
+            res.end(JSON.stringify(transactionResult.result));
+          }
+        } catch (error) {
+          handleCaughtError(error, res);
+        }
+      });
     } catch (error) {
       handleCaughtError(error, res);
     }

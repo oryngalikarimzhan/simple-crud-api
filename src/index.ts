@@ -26,22 +26,15 @@ if (cluster.isPrimary) {
     }
   });
 
-  if (mode && mode === 'parallel') {
-    runLoadBalancerServer(port);
-  } else {
+  if (!mode) {
     runServer(port, memoryDbWorker);
+  } else if (mode === 'parallel') {
+    runLoadBalancerServer(port);
   }
 } else if (cluster.isWorker) {
-  if (!cluster.worker) {
-    console.log('Closing process. Reason: cluster worker does not exists');
-    process.exit();
-  }
-
-  if (cluster.worker.id === 1) {
+  if (process.env.MEMORY_DB) {
     runMemoryDb();
-  }
-
-  if (mode && mode === 'parallel' && cluster.worker.id !== 1) {
+  } else if (mode && mode === 'parallel') {
     runLoadBalancerServer(port);
   }
 }

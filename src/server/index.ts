@@ -17,7 +17,7 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
     users: new UsersController(memoryDBWorker),
   };
 
-  const server = http.createServer(async (req, res) => {
+  const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
     try {

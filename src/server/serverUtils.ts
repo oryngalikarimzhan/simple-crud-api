@@ -13,6 +13,7 @@ export const enum StatusCodes {
 
 export enum ServerMessages {
   SERVER_INTERNAL = 'Unexpected server error',
+  ROUTE_NOT_EXISTS = 'This route does not exist',
   UNSUPPORTED_METHOD = 'Method is not supported',
   INVALID_USER_ID = 'Invalid user id',
   BAD_ROUTE = 'URL Route is incorrect or has excess data in URL',
@@ -32,7 +33,7 @@ export const enum HTTPMethods {
 
 export function validateAndGet(url: string | undefined) {
   if (!url) {
-    throw new NotFoundError(url);
+    throw new NotFoundError(`${ServerMessages.ROUTE_NOT_EXISTS}: ${url}`);
   }
 
   const [rootRoute, route, ...rest] = url.slice(1).split('/');
