@@ -120,6 +120,9 @@ export class UsersController implements IController {
 
       if (cluster.isPrimary) {
         if (!this.db) {
+          console.log(
+            'Closing process. Reason: memory db worker does not exists',
+          );
           process.exit();
         }
 
@@ -145,6 +148,9 @@ export class UsersController implements IController {
         });
       } else {
         if (!process.send) {
+          console.log(
+            'Closing process. Reason: process send method does not exist',
+          );
           process.exit();
         }
         process.send(transaction);

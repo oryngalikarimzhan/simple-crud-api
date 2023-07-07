@@ -49,6 +49,7 @@ export function runLoadBalancerServer(port: number) {
     const workerPort = process.env.WORKER_PORT;
 
     if (!workerPort) {
+      console.log('Closing process. Reason: worker port does not exists');
       process.exit();
     }
 

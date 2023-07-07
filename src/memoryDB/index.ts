@@ -22,6 +22,9 @@ export function runMemoryDb() {
 
   process.on('message', ({ type, pid, params }: MemoryDBTransaction) => {
     if (!process.send) {
+      console.log(
+        'Closing process. Reason: memory db worker process send method does not exists',
+      );
       process.exit();
     }
 
