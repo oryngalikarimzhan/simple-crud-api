@@ -12,24 +12,27 @@ const port = +(process.env.PORT || 4000);
 if (cluster.isPrimary) {
   const memoryDbWorker = cluster.fork({ MEMORY_DB: true });
 
-  cluster.on('message', (_, msg) => {
-    memoryDbWorker.send(msg as Serializable);
-  });
-
-  memoryDbWorker.on('message', (msg) => {
-    if (cluster.workers) {
-      Object.keys(cluster.workers).forEach((id) => {
-        if (+id !== 1) {
-          cluster.workers?.[id]?.send(msg);
-        }
-      });
-    }
-  });
-
   if (!mode) {
     runServer(port, memoryDbWorker);
   } else if (mode === 'parallel') {
     runLoadBalancerServer(port);
+
+    cluster.on('message', (worker, msg) => {
+      if (worker !== memoryDbWorker) {
+        memoryDbWorker.send(msg as Serializable);
+      }
+    });
+
+    memoryDbWorker.on('message', (msg) => {
+      if (cluster.workers) {
+        cluster.workers;
+        Object.keys(cluster.workers).forEach((id) => {
+          if (+id !== 1 && cluster.workers?.[id]?.process.pid === msg.pid) {
+            cluster.workers?.[id]?.send(msg);
+          }
+        });
+      }
+    });
   }
 } else if (cluster.isWorker) {
   if (process.env.MEMORY_DB) {

@@ -6,6 +6,8 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 export const enum StatusCodes {
   OK = 200,
+  CREATED = 201,
+  DELETED = 204,
   BAD_REQUEST = 400,
   NOT_FOUND = 404,
   SERVER_INTERNAL = 500,
@@ -45,7 +47,7 @@ export function validateAndGet(url: string | undefined) {
     !routes.includes(route) ||
     rest.length > 1
   ) {
-    throw new NotFoundError(url);
+    throw new NotFoundError(`${ServerMessages.ROUTE_NOT_EXISTS}: ${url}`);
   }
 
   const id = rest[0];

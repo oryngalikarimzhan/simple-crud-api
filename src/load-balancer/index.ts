@@ -3,7 +3,7 @@ import http from 'http';
 import { availableParallelism } from 'os';
 import { runServer } from '../server';
 import { host } from '../server/constants';
-import { StatusCodes } from '../server/serverUtils';
+import { StatusCodes, handleCaughtError } from '../server/serverUtils';
 
 export function runLoadBalancerServer(port: number) {
   if (cluster.isPrimary) {
@@ -37,8 +37,8 @@ export function runLoadBalancerServer(port: number) {
         );
 
         req.pipe(forwardReq);
-      } catch (err) {
-        console.log(err);
+      } catch (error) {
+        handleCaughtError(error, res);
       }
     });
 

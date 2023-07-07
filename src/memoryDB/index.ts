@@ -14,10 +14,11 @@ export function runMemoryDb() {
       }
 
       switch (transaction.route) {
-        case 'users':
+        case 'users': {
           handleUsersTransaction(usersMemoryDb, transaction);
-        default:
-          throw new Error();
+
+          break;
+        }
       }
     } catch {
       if (!process.send) {
@@ -42,7 +43,7 @@ function handleUsersTransaction(
 
   switch (type) {
     case UsersTransactionTypes.GET_USERS: {
-      process.send({ result: usersMemoryDb, pid });
+      process.send({ result: usersMemoryDb, pid, type });
       break;
     }
 
@@ -59,6 +60,7 @@ function handleUsersTransaction(
           : undefined,
         pid,
         isError: !isSuccess,
+        type,
       });
       break;
     }
@@ -76,6 +78,7 @@ function handleUsersTransaction(
         result: isSuccess ? params : undefined,
         pid,
         isError: !isSuccess,
+        type,
       });
 
       break;
@@ -105,6 +108,7 @@ function handleUsersTransaction(
         result: isSuccess ? updatedUser : undefined,
         pid,
         isError: !isSuccess,
+        type,
       });
 
       break;
@@ -124,7 +128,7 @@ function handleUsersTransaction(
         isSuccess = false;
       }
 
-      process.send({ result: deletedUser, pid, isError: !isSuccess });
+      process.send({ result: deletedUser, pid, isError: !isSuccess, type });
 
       break;
     }

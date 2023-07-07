@@ -18,6 +18,7 @@ export type MemoryDBTransaction = {
 
 export type MemoryDBTransactionResult = {
   pid: number;
+  type: TransactionType;
   result: User[] | User | string;
   isError: boolean;
 };

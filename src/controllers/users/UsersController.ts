@@ -36,6 +36,7 @@ export class UsersController implements IController {
         pid: process.pid,
         route: 'users',
       } as MemoryDBTransaction;
+
       const { method } = req;
 
       switch (method) {
@@ -98,7 +99,7 @@ export class UsersController implements IController {
             throw new BadRequestError(ServerMessages.INVALID_JSON_FORMAT);
           }
 
-          if (!isValidUserUpdateDto(userDto)) {
+          if (!isValidUserUpdateDto(userDto, id)) {
             throw new BadRequestError(ServerMessages.INVALID_USER_DATA);
           }
 
@@ -128,27 +129,38 @@ export class UsersController implements IController {
         console.log(
           'Closing process. Reason: process send method or memory database do not exist',
         );
+
         process.exit();
       }
+
       channel.send(transaction);
 
-      channel.on('message', (msg) => {
+      channel.once('message', (msg) => {
         try {
-          const transactionResult = msg as MemoryDBTransactionResult;
+          const { pid, isError, result, type } =
+            msg as MemoryDBTransactionResult;
 
-          if (transactionResult.pid === process.pid) {
-            if (transactionResult.isError) {
+          if (pid === process.pid) {
+            if (isError) {
+              console.log('isError on users controller');
               throw new Error();
             }
 
-            if (!transactionResult.result) {
+            if (!result) {
               throw new NotFoundError(ServerMessages.USER_NOT_FOUND);
             }
 
-            res.statusCode = StatusCodes.OK;
-            res.end(JSON.stringify(transactionResult.result));
+            res.statusCode =
+              type === UsersTransactionTypes.CREATE_USER
+                ? StatusCodes.CREATED
+                : type === UsersTransactionTypes.DELETE_USER
+                ? StatusCodes.DELETED
+                : StatusCodes.OK;
+
+            res.end(JSON.stringify(result));
           }
         } catch (error) {
+          console.log('users controller');
           handleCaughtError(error, res);
         }
       });
