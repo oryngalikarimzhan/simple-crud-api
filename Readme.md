@@ -55,7 +55,7 @@ To start the server in 'production' mode with 'clustering' ability
 npm run start:multi:prod
 ```
 
-To run tests
+To run tests you need to start server in 'development' mode with command above and open new terminal window and run this command
 
 ```
 npm run test
