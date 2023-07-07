@@ -1,4 +1,4 @@
-import { User, UserUpdateDto } from '../models/user/User';
+import { User, UserUpdateDto } from '../models/user';
 
 export type UniqueId = string;
 export type TransactionParams =

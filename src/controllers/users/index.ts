@@ -7,7 +7,7 @@ import {
   MemoryDBTransaction,
   MemoryDBTransactionResult,
 } from '../../memoryDB/utils';
-import { UserCreateDto, UserUpdateDto, User } from '../../models/user/User';
+import { UserCreateDto, UserUpdateDto, User } from '../../models/user';
 import {
   isValidUserCreateDto,
   isValidUserUpdateDto,

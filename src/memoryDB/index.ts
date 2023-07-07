@@ -1,4 +1,4 @@
-import { User } from '../models/user/User';
+import { User } from '../models/user';
 import { MemoryDBTransaction, UsersTransactionTypes } from './utils';
 import { routes } from '../server/constants';
 

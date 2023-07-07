@@ -10,13 +10,26 @@ const mode = process.env.MODE;
 const port = +(process.env.PORT || 4000);
 
 if (cluster.isPrimary) {
+  app();
+} else {
+  if (process.env.MEMORY_DB) {
+    runMemoryDb();
+  } else if (mode && mode === 'parallel') {
+    const workerPort = process.env.WORKER_PORT;
+
+    if (!workerPort) {
+      console.log('Closing process. Reason: worker port does not exists');
+      process.exit();
+    }
+
+    runServer(+workerPort);
+  }
+}
+
+export default function app() {
   const memoryDbWorker = cluster.fork({ MEMORY_DB: true });
 
-  if (!mode) {
-    runServer(port, memoryDbWorker);
-  } else if (mode === 'parallel') {
-    runLoadBalancerServer(port);
-
+  if (mode && mode === 'parallel') {
     cluster.on('message', (worker, msg) => {
       if (worker !== memoryDbWorker) {
         memoryDbWorker.send(msg as Serializable);
@@ -33,11 +46,9 @@ if (cluster.isPrimary) {
         });
       }
     });
+
+    return runLoadBalancerServer(port);
   }
-} else if (cluster.isWorker) {
-  if (process.env.MEMORY_DB) {
-    runMemoryDb();
-  } else if (mode && mode === 'parallel') {
-    runLoadBalancerServer(port);
-  }
+
+  return runServer(port, memoryDbWorker);
 }

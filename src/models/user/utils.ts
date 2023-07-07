@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { UserCreateDto, UserUpdateDto } from './User';
+import { UserCreateDto, UserUpdateDto } from '.';
 
 export function isValidUserCreateDto(data: any): data is UserCreateDto {
   return (

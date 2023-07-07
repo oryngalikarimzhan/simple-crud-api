@@ -7,7 +7,7 @@ import {
   validateAndGet,
 } from './serverUtils';
 import { host, routes } from './constants';
-import { UsersController } from '../controllers/users/UsersController';
+import { UsersController } from '../controllers/users';
 import { IController } from '../controllers/IController';
 
 const getServerExecutorName = () => (cluster.isWorker ? 'WORKER' : 'SERVER');
@@ -42,4 +42,6 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
       `${getServerExecutorName()}: ${host} = ${port}, pid = ${process.pid}`,
     );
   });
+
+  return server;
 }
