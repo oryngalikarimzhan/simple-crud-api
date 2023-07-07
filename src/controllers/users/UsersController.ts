@@ -3,7 +3,10 @@ import { Worker } from 'cluster';
 import { v4 } from 'uuid';
 
 import { IController } from '../IController';
-import { MemoryDBTransaction, MemoryDBTransactionResult } from '../../memoryDB';
+import {
+  MemoryDBTransaction,
+  MemoryDBTransactionResult,
+} from '../../memoryDB/utils';
 import { UserCreateDto, UserUpdateDto, User } from '../../models/user/User';
 import {
   isValidUserCreateDto,
@@ -31,6 +34,7 @@ export class UsersController implements IController {
     try {
       const transaction = {
         pid: process.pid,
+        route: 'users',
       } as MemoryDBTransaction;
       const { method } = req;
 
