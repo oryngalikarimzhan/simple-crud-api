@@ -23,15 +23,15 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
     try {
       const { method, url } = req;
 
-      logRequestToConsole('Request', {
+      logRequestToConsole({
         method,
         port,
         pid: process.pid,
       });
 
-      const { route, id } = validateAndGet(url);
+      const urlData = validateAndGet(url);
 
-      controllers[route]?.handle(req, res, id);
+      controllers[urlData.route]?.handle(req, res, urlData);
     } catch (error) {
       handleCaughtError(error, res);
     }

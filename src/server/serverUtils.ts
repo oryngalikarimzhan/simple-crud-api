@@ -33,7 +33,12 @@ export const enum HTTPMethods {
   DELETE = 'DELETE',
 }
 
-export function validateAndGet(url: string | undefined) {
+export type URLData = {
+  route: string;
+  id: string | undefined;
+};
+
+export function validateAndGet(url: string | undefined): URLData {
   if (!url) {
     throw new NotFoundError(`${ServerMessages.ROUTE_NOT_EXISTS}: ${url}`);
   }
@@ -80,15 +85,12 @@ export async function getBodyData(req: IncomingMessage): Promise<string> {
   });
 }
 
-export function logRequestToConsole(
-  name: string,
-  stats: {
-    method: string | undefined;
-    port: number;
-    pid: number;
-  },
-) {
-  console.table({ [name]: { ...stats, time: new Date() } });
+export function logRequestToConsole(stats: {
+  method: string | undefined;
+  port: number;
+  pid: number;
+}) {
+  console.table({ Request: { ...stats, time: new Date() } });
 }
 
 export function handleCaughtError(error: unknown, res: ServerResponse) {

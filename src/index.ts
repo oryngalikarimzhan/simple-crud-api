@@ -17,12 +17,9 @@ if (cluster.isPrimary) {
   } else if (mode && mode === 'parallel') {
     const workerPort = process.env.WORKER_PORT;
 
-    if (!workerPort) {
-      console.log('Closing process. Reason: worker port does not exists');
-      process.exit();
+    if (workerPort) {
+      runServer(+workerPort);
     }
-
-    runServer(+workerPort);
   }
 }
 
@@ -38,12 +35,13 @@ export default function app() {
 
     memoryDbWorker.on('message', (msg) => {
       if (cluster.workers) {
-        cluster.workers;
-        Object.keys(cluster.workers).forEach((id) => {
-          if (+id !== 1 && cluster.workers?.[id]?.process.pid === msg.pid) {
-            cluster.workers?.[id]?.send(msg);
-          }
-        });
+        const worker = Object.entries(cluster.workers).find(
+          ([id, worker]) => +id !== 1 && worker?.process.pid === msg.pid,
+        )?.[1];
+
+        if (worker) {
+          worker.send(msg);
+        }
       }
     });
 

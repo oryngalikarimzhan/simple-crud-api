@@ -16,6 +16,7 @@ import {
   HTTPMethods,
   ServerMessages,
   StatusCodes,
+  URLData,
   getBodyData,
   handleCaughtError,
 } from '../../server/serverUtils';
@@ -29,12 +30,12 @@ export class UsersController implements IController {
   async handle(
     req: http.IncomingMessage,
     res: http.ServerResponse,
-    id: string | undefined,
+    { route, id }: URLData,
   ) {
     try {
       const transaction = {
         pid: process.pid,
-        route: 'users',
+        route,
       } as MemoryDBTransaction;
 
       const { method } = req;
@@ -142,7 +143,6 @@ export class UsersController implements IController {
 
           if (pid === process.pid) {
             if (isError) {
-              console.log('isError on users controller');
               throw new Error();
             }
 
@@ -160,7 +160,6 @@ export class UsersController implements IController {
             res.end(JSON.stringify(result));
           }
         } catch (error) {
-          console.log('users controller');
           handleCaughtError(error, res);
         }
       });
