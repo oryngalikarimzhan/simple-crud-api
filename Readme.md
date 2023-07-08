@@ -1,3 +1,6 @@
+## Description
+This is a straightforward implementation of a CRUD API server. It utilizes an in-memory data storage managed by a worker, simulating the functionality of a real database. Additionally, the server includes a load balancer for horizontal scaling, allowing for efficient distribution of incoming requests.
+
 ## Installation
 
 **Before you begin, ensure that you have installed **Node.js(v18 LTS)***
