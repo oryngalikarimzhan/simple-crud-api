@@ -39,6 +39,8 @@ export default function app() {
           ([id, worker]) => +id !== 1 && worker?.process.pid === msg.pid,
         )?.[1];
 
+        if (!worker) console.log(worker);
+
         if (worker) {
           worker.send(msg);
         }

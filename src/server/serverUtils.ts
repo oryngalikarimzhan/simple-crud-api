@@ -85,7 +85,7 @@ export async function getBodyData(req: IncomingMessage): Promise<string> {
   });
 }
 
-export function logRequestToConsole(stats: {
+export async function logRequestToConsole(stats: {
   method: string | undefined;
   port: number;
   pid: number;

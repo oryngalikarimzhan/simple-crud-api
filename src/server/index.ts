@@ -17,13 +17,13 @@ export function runServer(port: number, memoryDBWorker?: Worker) {
     users: new UsersController(memoryDBWorker),
   };
 
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
     try {
       const { method, url } = req;
 
-      logRequestToConsole({
+      await logRequestToConsole({
         method,
         port,
         pid: process.pid,
